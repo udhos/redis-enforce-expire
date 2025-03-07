@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -148,12 +149,12 @@ func setExpire(r rule, dbName string, db int, concurrent bool) {
 			switch {
 			case dur == -1:
 				missingTTL++
-				if ok := expire(ctx, redisClient, k, r.DefaultTTL, r.DryRun); !ok {
+				if ok := expire(ctx, redisClient, k, r.DefaultTTL, r.AddRandomTTL, r.DryRun); !ok {
 					expireErrors++
 				}
 			case dur > r.MaxTTL:
 				clampedTTL++
-				if ok := expire(ctx, redisClient, k, r.MaxTTL, r.DryRun); !ok {
+				if ok := expire(ctx, redisClient, k, r.MaxTTL, r.AddRandomTTL, r.DryRun); !ok {
 					expireErrors++
 				}
 			}
@@ -170,11 +171,12 @@ func setExpire(r rule, dbName string, db int, concurrent bool) {
 		me, dbName, r.DryRun, concurrent, r.ScanMatch, r.ScanCount, n, getTTLErrors, missingTTL, r.DefaultTTL, clampedTTL, r.MaxTTL, expireErrors, elap)
 }
 
-func expire(ctx context.Context, redisClient *redis.Client, key string, dur time.Duration, dry bool) bool {
+func expire(ctx context.Context, redisClient *redis.Client, key string, dur, addRandomTTL time.Duration, dry bool) bool {
 	if dry {
 		return true
 	}
-	ok, errExpire := redisClient.Expire(ctx, key, dur).Result()
+	add := time.Duration(rand.Int64N(addRandomTTL.Nanoseconds() + 1))
+	ok, errExpire := redisClient.Expire(ctx, key, dur+add).Result()
 	return ok && errExpire == nil
 }
 

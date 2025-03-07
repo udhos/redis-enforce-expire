@@ -13,3 +13,4 @@
   default_ttl: 1m
   max_ttl: 5m
   crash_on_scan_error: false
+  add_random_ttl: 10s # randomize expiration to avoid expiring many keys at the same time

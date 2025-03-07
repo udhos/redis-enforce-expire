@@ -79,3 +79,4 @@ configMapRules:
     default_ttl: 24h
     max_ttl: 168h # 7d
     crash_on_scan_error: true
+    add_random_ttl: 1h # randomize expiration to avoid expiring many keys at the same time

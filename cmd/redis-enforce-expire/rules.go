@@ -27,6 +27,7 @@ type rule struct {
 	DefaultTTL            time.Duration `yaml:"default_ttl"`
 	MaxTTL                time.Duration `yaml:"max_ttl"`
 	CrashOnScanError      bool          `yaml:"crash_on_scan_error"`
+	AddRandomTTL          time.Duration `yaml:"add_random_ttl"`
 }
 
 func (r *rule) label(index, total int) string {
