@@ -27,7 +27,7 @@ Look at this example log line:
 Log fields description:
 
 ```
-rule-01[1/1]db:0 = <ruleName>[<ruleNumber>/<totalRules>]db:<dbNumber>
+rule-01[1/1]db:1 = <ruleName>[<ruleNumber>/<totalRules>]db:<dbNumber>
 dry              = running in dry mode
 concurrent       = running in concurrent mode (multiple goroutines)
 scan_match       = scan match pattern for keys

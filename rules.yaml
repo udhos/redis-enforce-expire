@@ -12,3 +12,4 @@
   multiple_goroutines: true
   default_ttl: 1m
   max_ttl: 5m
+  crash_on_scan_error: false

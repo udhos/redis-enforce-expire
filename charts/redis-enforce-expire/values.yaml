@@ -78,3 +78,4 @@ configMapRules:
     multiple_goroutines: true
     default_ttl: 24h
     max_ttl: 168h # 7d
+    crash_on_scan_error: true

@@ -129,8 +129,12 @@ func setExpire(r rule, dbName string, db int, concurrent bool) {
 			keys, cursor, err = redisClient.ScanType(ctx, cursor, r.ScanMatch, r.ScanCount, r.ScanType).Result()
 		}
 		if err != nil {
-			errorf("%s: %s: scan error: %v",
-				me, dbName, err)
+			if r.CrashOnScanError {
+				fatalf("%s: %s: scan error crash_on_scan_error=%t: %v",
+					me, dbName, r.CrashOnScanError, err)
+			}
+			errorf("%s: %s: scan error crash_on_scan_error=%t: %v",
+				me, dbName, r.CrashOnScanError, err)
 			break
 		}
 

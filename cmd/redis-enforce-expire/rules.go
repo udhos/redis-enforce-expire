@@ -26,6 +26,7 @@ type rule struct {
 	MultipleGoroutines    bool          `yaml:"multiple_goroutines"`
 	DefaultTTL            time.Duration `yaml:"default_ttl"`
 	MaxTTL                time.Duration `yaml:"max_ttl"`
+	CrashOnScanError      bool          `yaml:"crash_on_scan_error"`
 }
 
 func (r *rule) label(index, total int) string {
