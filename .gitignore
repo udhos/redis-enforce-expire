@@ -7,6 +7,7 @@
 *.dll
 *.so
 *.dylib
+*.pem
 
 # Test binary, built with `go test -c`
 *.test
@@ -19,7 +20,7 @@
 
 # Go workspace file
 go.work
-go.work.sum
 
-# env file
-.env
+charts-tmp
+
+docker-push.sh

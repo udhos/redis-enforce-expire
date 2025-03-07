@@ -1,0 +1,80 @@
+# Default values for redis-enforce-expire.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# daily at 02:00 GMT-3
+schedule: "0 5 * * *"
+startingDeadlineSeconds: 120
+
+image:
+  repository: udhos/redis-enforce-expire
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+#podAnnotations: {}
+podAnnotations:
+  "sidecar.istio.io/inject": "false"
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 50Mi
+    ephemeral-storage: 500Mi
+  limits:
+    cpu: 500m
+    memory: 50Mi
+    ephemeral-storage: 500Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+#
+# See: https://stackoverflow.com/questions/72816925/helm-templating-in-configmap-for-values-yaml
+#
+configMapProperties:
+  AUTOMEMLIMIT_DEBUG: "true"
+  RULES: "/etc/redis-enforce-expire/rules.yaml"
+
+configMapRules:
+  - #rule_name: rule1
+    client_name: redis-enforce-expire
+    dry_run: true
+    redis_addr: "localhost:6379"
+    redis_password: "123"
+    redis_db: "0-1" # 0 to 1
+    tls: false
+    tls_insecure_skip_verify: false
+    scan_match: "*"
+    #scan_count: 10
+    scan_type: "" # emtpy means all
+    multiple_goroutines: true
+    default_ttl: 24h
+    max_ttl: 168h # 7d
