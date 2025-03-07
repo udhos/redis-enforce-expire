@@ -121,7 +121,9 @@ func setExpire(r rule, dbName string, db int, concurrent bool) {
 	var missingTTL int
 	var expireErrors int
 	var clampedTTL int
+	var scans int
 	for {
+		scans++
 		var keys []string
 		var err error
 		if r.ScanType == "" {
@@ -145,7 +147,6 @@ func setExpire(r rule, dbName string, db int, concurrent bool) {
 				getTTLErrors++
 				continue
 			}
-			//infof("key=%s dur=%v", k, dur)
 			switch {
 			case dur == -1:
 				missingTTL++
@@ -167,8 +168,8 @@ func setExpire(r rule, dbName string, db int, concurrent bool) {
 	}
 
 	elap := time.Since(begin)
-	infof("%s: %s dry=%t concurrent=%t scan_match=%s scan_count=%d total_keys=%d ttl_errors=%d missing_ttl=%d(%v) clamped_ttl=%d(%v) expire_errors=%d elapsed=%v",
-		me, dbName, r.DryRun, concurrent, r.ScanMatch, r.ScanCount, n, getTTLErrors, missingTTL, r.DefaultTTL, clampedTTL, r.MaxTTL, expireErrors, elap)
+	infof("%s: %s dry=%t concurrent=%t scan_match=%s scan_count=%d scans=%d total_keys=%d ttl_errors=%d missing_ttl=%d(%v) clamped_ttl=%d(%v) expire_errors=%d elapsed=%v",
+		me, dbName, r.DryRun, concurrent, r.ScanMatch, r.ScanCount, scans, n, getTTLErrors, missingTTL, r.DefaultTTL, clampedTTL, r.MaxTTL, expireErrors, elap)
 }
 
 func expire(ctx context.Context, redisClient *redis.Client, key string, dur, addRandomTTL time.Duration, dry bool) bool {
