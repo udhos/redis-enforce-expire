@@ -28,6 +28,7 @@ type rule struct {
 	MaxTTL                time.Duration `yaml:"max_ttl"`
 	CrashOnScanError      bool          `yaml:"crash_on_scan_error"`
 	AddRandomTTL          time.Duration `yaml:"add_random_ttl"`
+	PipelineBatchSize     int           `yaml:"pipeline_batch_size"`
 }
 
 func (r *rule) label(index, total int) string {
@@ -65,7 +66,7 @@ func loadRules(path string) ([]rule, error) {
 }
 
 const (
-	defaultScanCount = 10
+	defaultScanCount = 1000
 	defaultRedisDB   = "0-15"
 )
 

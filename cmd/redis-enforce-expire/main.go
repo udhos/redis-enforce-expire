@@ -122,6 +122,21 @@ func setExpire(r rule, dbName string, db int, concurrent bool) {
 	var expireErrors int
 	var clampedTTL int
 	var scans int
+
+	pipeline := r.PipelineBatchSize > 0
+	var p pipe
+	var execErrors int
+	if pipeline {
+		p = pipe{
+			redisClient:  redisClient,
+			batchMax:     r.PipelineBatchSize,
+			maxTTL:       r.MaxTTL,
+			defaultTTL:   r.DefaultTTL,
+			addRandomTTL: r.AddRandomTTL,
+			dry:          r.DryRun,
+		}
+	}
+
 	for {
 		scans++
 		var keys []string
@@ -141,22 +156,39 @@ func setExpire(r rule, dbName string, db int, concurrent bool) {
 			break
 		}
 
-		for _, k := range keys {
-			dur, errDur := redisClient.TTL(ctx, k).Result()
-			if errDur != nil {
-				getTTLErrors++
-				continue
+		if pipeline {
+			//
+			// pipelined
+			//
+			for _, k := range keys {
+				ttl, exec, missing, clamped, expire := p.add(ctx, k)
+				getTTLErrors += ttl
+				execErrors += exec
+				missingTTL += missing
+				clampedTTL += clamped
+				expireErrors += expire
 			}
-			switch {
-			case dur == -1:
-				missingTTL++
-				if ok := expire(ctx, redisClient, k, r.DefaultTTL, r.AddRandomTTL, r.DryRun); !ok {
-					expireErrors++
+		} else {
+			//
+			// no pipeline
+			//
+			for _, k := range keys {
+				dur, errDur := redisClient.TTL(ctx, k).Result()
+				if errDur != nil {
+					getTTLErrors++
+					continue
 				}
-			case dur > r.MaxTTL:
-				clampedTTL++
-				if ok := expire(ctx, redisClient, k, r.MaxTTL, r.AddRandomTTL, r.DryRun); !ok {
-					expireErrors++
+				switch evalDur(dur, r.MaxTTL) {
+				case shouldExpireDefault:
+					missingTTL++
+					if ok := expire(ctx, redisClient, k, r.DefaultTTL, r.AddRandomTTL, r.DryRun); !ok {
+						expireErrors++
+					}
+				case shouldClamp:
+					clampedTTL++
+					if ok := expire(ctx, redisClient, k, r.MaxTTL, r.AddRandomTTL, r.DryRun); !ok {
+						expireErrors++
+					}
 				}
 			}
 		}
@@ -167,16 +199,171 @@ func setExpire(r rule, dbName string, db int, concurrent bool) {
 		}
 	}
 
+	if pipeline {
+		ttl, exec, missing, clamped, expire := p.closeBatch(ctx)
+		getTTLErrors += ttl
+		execErrors += exec
+		missingTTL += missing
+		clampedTTL += clamped
+		expireErrors += expire
+	}
+
 	elap := time.Since(begin)
-	infof("%s: %s dry=%t concurrent=%t scan_match=%s scan_count=%d scans=%d total_keys=%d ttl_errors=%d missing_ttl=%d(%v) clamped_ttl=%d(%v) expire_errors=%d elapsed=%v",
-		me, dbName, r.DryRun, concurrent, r.ScanMatch, r.ScanCount, scans, n, getTTLErrors, missingTTL, r.DefaultTTL, clampedTTL, r.MaxTTL, expireErrors, elap)
+	infof("%s: %s dry=%t concurrent=%t pipeline_batch=%d scan_match=%s scan_count=%d scans=%d total_keys=%d ttl_errors=%d missing_ttl=%d(%v) clamped_ttl=%d(%v) expire_errors=%d exec_errors=%d elapsed=%v",
+		me, dbName, r.DryRun, concurrent, r.PipelineBatchSize, r.ScanMatch, r.ScanCount, scans, n, getTTLErrors, missingTTL, r.DefaultTTL, clampedTTL, r.MaxTTL, expireErrors, execErrors, elap)
+}
+
+const (
+	shouldIgnore        = 0
+	shouldExpireDefault = 1
+	shouldClamp         = 2
+)
+
+func evalDur(dur, maxTTL time.Duration) int {
+	switch {
+	case dur == -1:
+		return shouldExpireDefault
+	case dur > maxTTL:
+		return shouldClamp
+	}
+	return shouldIgnore
 }
 
 func expire(ctx context.Context, redisClient *redis.Client, key string, dur, addRandomTTL time.Duration, dry bool) bool {
 	if dry {
 		return true
 	}
-	add := time.Duration(rand.Int64N(addRandomTTL.Nanoseconds() + 1))
+	add := randomDur(addRandomTTL)
 	ok, errExpire := redisClient.Expire(ctx, key, dur+add).Result()
 	return ok && errExpire == nil
+}
+
+func randomDur(delta time.Duration) time.Duration {
+	return time.Duration(rand.Int64N(delta.Nanoseconds() + 1))
+}
+
+type pipe struct {
+	pipe         redis.Pipeliner
+	redisClient  *redis.Client
+	batchMax     int
+	batchCurrent int
+	pipeExpire   redis.Pipeliner
+	maxTTL       time.Duration
+	defaultTTL   time.Duration
+	addRandomTTL time.Duration
+	dry          bool
+}
+
+func (p *pipe) add(ctx context.Context, key string) (getTTLErrors, execErrors,
+	missingTTL, clampedTTL, expireErrors int) {
+	if p.pipe == nil {
+		p.pipe = p.redisClient.Pipeline()
+	}
+	p.pipe.TTL(ctx, key)
+	p.batchCurrent++
+	if p.batchCurrent >= p.batchMax {
+		ttl, exec, missing, clamped, expire := p.closeBatch(ctx)
+		getTTLErrors += ttl
+		execErrors += exec
+		missingTTL += missing
+		clampedTTL += clamped
+		expireErrors += expire
+	}
+	return
+}
+
+func (p *pipe) closeBatch(ctx context.Context) (getTTLErrors, execErrors,
+	missingTTL, clampedTTL, expireErrors int) {
+
+	defer func() {
+		p.pipe = nil
+		p.batchCurrent = 0
+	}()
+
+	if p.batchCurrent < 1 {
+		return
+	}
+	cmds, errExec := p.pipe.Exec(ctx)
+	if errExec != nil {
+		execErrors++
+		return
+	}
+
+	for _, cmd := range cmds {
+		c := cmd.(*redis.DurationCmd)
+		dur, errDur := c.Result()
+		if errDur != nil {
+			getTTLErrors++
+			continue
+		}
+
+		key, errKey := getCmdKey(c)
+		if errKey != nil {
+			errorf("closeBatch: getCmdKey: %v", errKey)
+			getTTLErrors++
+			return
+		}
+
+		switch evalDur(dur, p.maxTTL) {
+		case shouldExpireDefault:
+			missingTTL++
+			p.expire(ctx, key, p.defaultTTL, p.addRandomTTL, p.dry)
+		case shouldClamp:
+			clampedTTL++
+			p.expire(ctx, key, p.maxTTL, p.addRandomTTL, p.dry)
+		}
+	}
+
+	exec, expire := p.execExpire(ctx)
+	execErrors += exec
+	expireErrors += expire
+
+	return
+}
+
+func getCmdKey(cmd redis.Cmder) (string, error) {
+	args := cmd.Args()
+	if len(args) < 2 {
+		return "", fmt.Errorf("short command: len=%d: %v", len(args), args)
+	}
+	k := args[1]
+	key, isStr := k.(string)
+	if !isStr {
+		return "", fmt.Errorf("command key not a string: type=%T value=%v args=%v",
+			k, k, args)
+	}
+	return key, nil
+}
+
+// expire batches one pipelined expire command.
+func (p *pipe) expire(ctx context.Context, key string, ttl, random time.Duration, dry bool) {
+	if p.pipeExpire == nil {
+		p.pipeExpire = p.redisClient.Pipeline()
+	}
+	dur := ttl + randomDur(random)
+	if dry {
+		return
+	}
+	p.pipeExpire.Expire(ctx, key, dur)
+}
+
+// execExpire executes batched expire commands.
+func (p *pipe) execExpire(ctx context.Context) (execErrors, expireErrors int) {
+	defer func() {
+		p.pipeExpire = nil
+	}()
+
+	cmds, errExec := p.pipeExpire.Exec(ctx)
+	if errExec != nil {
+		execErrors++
+		return
+	}
+	for _, cmd := range cmds {
+		c := cmd.(*redis.BoolCmd)
+		ok, errExpire := c.Result()
+		if !ok || errExpire != nil {
+			expireErrors++
+		}
+	}
+	return
 }

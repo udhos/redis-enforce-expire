@@ -64,7 +64,7 @@ configMapProperties:
   RULES: "/etc/redis-enforce-expire/rules.yaml"
 
 configMapRules:
-  - #rule_name: rule1
+  - rule_name: rule1
     client_name: redis-enforce-expire
     dry_run: true
     redis_addr: "localhost:6379"
@@ -73,10 +73,11 @@ configMapRules:
     tls: false
     tls_insecure_skip_verify: false
     scan_match: "*"
-    #scan_count: 10
+    scan_count: 1000
     scan_type: "" # emtpy means all
     multiple_goroutines: true
     default_ttl: 24h
     max_ttl: 168h # 7d
     crash_on_scan_error: true
     add_random_ttl: 1h # randomize expiration to avoid expiring many keys at the same time
+    pipeline_batch_size: 1000 # pipeline is disabled if batch is less than 1
