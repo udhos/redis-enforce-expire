@@ -41,7 +41,7 @@ rule_name:                give a name for the rule
 client_name:              set our redis client name for connections
 dry_run:                  enable dry mode (if enabled, the redis server is not modified)
 redis_addr:               redis server hostname:port
-redis_password:           redis password. leave it empty if your redist server does not have a password
+redis_password:           redis password. leave it empty if your redis server does not have a password
 redis_db:                 range of DBs to scan over
 tls:                      enable TLS
 tls_insecure_skip_verify: disable TLS certificate verification on our side
