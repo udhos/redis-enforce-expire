@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -16,6 +15,7 @@ import (
 
 	_ "github.com/KimMachineGun/automemlimit"
 	"github.com/redis/go-redis/v9"
+	"github.com/udhos/redis-enforce-expire/internal/redisclient"
 	_ "go.uber.org/automaxprocs"
 )
 
@@ -111,7 +111,7 @@ func setExpire(r rule, dbName string, db int, concurrent bool) {
 
 	begin := time.Now()
 
-	redisClient := newRedisClient(r.RedisAddr,
+	redisClient := redisclient.New(r.RedisAddr,
 		r.RedisPassword, r.ClientName, db, r.TLS, r.TLSInsecureSkipVerify)
 	ctx := context.TODO()
 
@@ -179,23 +179,4 @@ func expire(ctx context.Context, redisClient *redis.Client, key string, dur, add
 	add := time.Duration(rand.Int64N(addRandomTTL.Nanoseconds() + 1))
 	ok, errExpire := redisClient.Expire(ctx, key, dur+add).Result()
 	return ok && errExpire == nil
-}
-
-func newRedisClient(addr, password, clientName string, db int, useTLS,
-	tlsInsecureSkipVerify bool) *redis.Client {
-	redisOptions := &redis.Options{
-		Addr:       addr,
-		Password:   password,
-		DB:         db,
-		ClientName: clientName,
-	}
-
-	if useTLS || tlsInsecureSkipVerify {
-		redisOptions.TLSConfig = &tls.Config{
-			MinVersion:         tls.VersionTLS12,
-			InsecureSkipVerify: tlsInsecureSkipVerify,
-		}
-	}
-
-	return redis.NewClient(redisOptions)
 }
