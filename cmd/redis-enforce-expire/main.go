@@ -194,7 +194,7 @@ func setExpire(r rule, dbName string, db int, concurrent bool) {
 					getTTLErrors++
 					continue
 				}
-				switch evalDur(dur, r.MaxTTL) {
+				switch evalDur(dur, r.MaxTTL+r.AddRandomTTL) {
 				case shouldExpireDefault:
 					missingTTL++
 					if ok := expire(ctx, redisClient, k, r.DefaultTTL, r.AddRandomTTL, r.DryRun); !ok {
@@ -320,7 +320,7 @@ func (p *pipe) closeBatch(ctx context.Context) (getTTLErrors, execErrors,
 			return
 		}
 
-		switch evalDur(dur, p.maxTTL) {
+		switch evalDur(dur, p.maxTTL+p.addRandomTTL) {
 		case shouldExpireDefault:
 			missingTTL++
 			p.expire(ctx, key, p.defaultTTL, p.addRandomTTL, p.dry)
