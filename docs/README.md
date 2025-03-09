@@ -14,10 +14,11 @@ Update files from repo:
 Search redis-enforce-expire:
 
     $ helm search repo redis-enforce-expire -l --version ">=0.0.0"
-    NAME                 	CHART VERSION	APP VERSION	DESCRIPTION
-    redis-enforce-expire/redis-enforce-expire	0.3.0        	0.3.0      	A Helm chart for Kubernetes
-    redis-enforce-expire/redis-enforce-expire	0.2.0        	0.2.0      	A Helm chart for Kubernetes
-    redis-enforce-expire/redis-enforce-expire	0.1.0        	0.1.0      	A Helm chart for Kubernetes
+    NAME                                     	CHART VERSION	APP VERSION	DESCRIPTION                                       
+    redis-enforce-expire/redis-enforce-expire	0.0.4        	0.0.4      	Helm chart to install redis-enforce-expire into...
+    redis-enforce-expire/redis-enforce-expire	0.0.3        	0.0.3      	Helm chart to install redis-enforce-expire into...
+    redis-enforce-expire/redis-enforce-expire	0.0.2        	0.0.2      	Helm chart to install redis-enforce-expire into...
+    redis-enforce-expire/redis-enforce-expire	0.0.1        	0.0.1      	Helm chart to install redis-enforce-expire into...
 
 To install the charts:
 
