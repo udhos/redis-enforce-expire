@@ -9,20 +9,17 @@ import (
 	"math/rand/v2"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sync"
 	"time"
 
 	_ "github.com/KimMachineGun/automemlimit"
 	"github.com/redis/go-redis/v9"
+	"github.com/udhos/boilerplate/awsconfig"
+	"github.com/udhos/boilerplate/boilerplate"
+	"github.com/udhos/boilerplate/secret"
 	"github.com/udhos/redis-enforce-expire/internal/redisclient"
 	_ "go.uber.org/automaxprocs"
 )
-
-func getVersion(me string) string {
-	return fmt.Sprintf("%s version=%s runtime=%s GOOS=%s GOARCH=%s GOMAXPROCS=%d",
-		me, version, runtime.Version(), runtime.GOOS, runtime.GOARCH, runtime.GOMAXPROCS(0))
-}
 
 type application struct {
 	rules []rule
@@ -37,7 +34,7 @@ func main() {
 	me := filepath.Base(os.Args[0])
 
 	{
-		v := getVersion(me)
+		v := boilerplate.LongVersion(me + " version=" + version)
 		if showVersion {
 			fmt.Println(v)
 			return
@@ -45,9 +42,11 @@ func main() {
 		slog.Info(v)
 	}
 
+	sec := initSecret(me)
+
 	rulesFile := envString("RULES", "rules.yaml")
 
-	rules, errRules := loadRules(rulesFile)
+	rules, errRules := loadRules(rulesFile, sec)
 	if errRules != nil {
 		fatalf("error reading rules file=%s: %v", rulesFile, errRules)
 	}
@@ -59,6 +58,23 @@ func main() {
 	}
 
 	run(app)
+}
+
+func initSecret(me string) *secret.Secret {
+	roleArn := envString("ROLE_ARN", "")
+	secretDebug := envBool("SECRET_DEBUG", false)
+
+	awsConfOptions := awsconfig.Options{
+		RoleArn:         roleArn,
+		RoleSessionName: me,
+	}
+
+	secretOptions := secret.Options{
+		AwsConfigSource: &secret.AwsConfigSource{AwsConfigOptions: awsConfOptions},
+		Debug:           secretDebug,
+	}
+	secret := secret.New(secretOptions)
+	return secret
 }
 
 func run(app *application) {

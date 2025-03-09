@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/udhos/boilerplate/secret"
 	"gopkg.in/yaml.v3"
 )
 
@@ -57,12 +58,12 @@ func (r *rule) parseRedisDB() (int, int, error) {
 	return first, last, nil
 }
 
-func loadRules(path string) ([]rule, error) {
+func loadRules(path string, sec *secret.Secret) ([]rule, error) {
 	data, errRead := os.ReadFile(path)
 	if errRead != nil {
 		return nil, errRead
 	}
-	return newRules(data)
+	return newRules(data, sec)
 }
 
 const (
@@ -70,7 +71,7 @@ const (
 	defaultRedisDB   = "0-15"
 )
 
-func newRules(data []byte) ([]rule, error) {
+func newRules(data []byte, sec *secret.Secret) ([]rule, error) {
 	const me = "newRules"
 	var rules []rule
 
@@ -96,6 +97,7 @@ func newRules(data []byte) ([]rule, error) {
 				me, r.label(i, len(rules)), r.ScanCount, defaultScanCount)
 			r.ScanCount = defaultScanCount
 		}
+		r.RedisPassword = sec.Retrieve(r.RedisPassword)
 		rules[i] = r
 	}
 

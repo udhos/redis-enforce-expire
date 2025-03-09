@@ -2,6 +2,10 @@
   client_name: redis-enforce-expire
   dry_run: false
   redis_addr: "localhost:6379"
+  # redis_password supports boilerplate secrets. see: https://github.com/udhos/boilerplate
+  # $ echo -n 'encrypted-value' | base64
+  # ZW5jcnlwdGVkLXZhbHVl
+  #redis_password: "#http::POST,http,configserver,9000,/decrypt,text/plain,ZW5jcnlwdGVkLXZhbHVl,Bearer not-used"
   redis_password: "123"
   redis_db: "0-1" # 0 to 1
   tls: false
