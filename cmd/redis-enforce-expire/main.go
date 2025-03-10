@@ -365,6 +365,11 @@ func (p *pipe) expire(ctx context.Context, key string, ttl, random time.Duration
 
 // execExpire executes batched expire commands.
 func (p *pipe) execExpire(ctx context.Context) (execErrors, expireErrors int) {
+
+	if p.pipeExpire == nil {
+		return
+	}
+
 	defer func() {
 		p.pipeExpire = nil
 	}()

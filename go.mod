@@ -5,7 +5,7 @@ go 1.24.1
 require (
 	github.com/KimMachineGun/automemlimit v0.7.1
 	github.com/redis/go-redis/v9 v9.7.1
-	github.com/udhos/boilerplate v1.6.5
+	github.com/udhos/boilerplate v1.6.6
 	go.uber.org/automaxprocs v1.6.0
 	gopkg.in/yaml.v3 v3.0.1
 )
