@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/udhos/redis-enforce-expire/internal/redisclient"
@@ -16,6 +15,7 @@ import (
 func main() {
 	var addr string
 	var password string
+	var keyPrefix string
 	var db int
 	var useTLS bool
 	var tlsInsecureSkipVerify bool
@@ -25,11 +25,12 @@ func main() {
 	var pipelineBatchSize int
 
 	var count int
-	flag.IntVar(&count, "count", 100_000, "how many keys to create")
+	flag.IntVar(&count, "count", 1_000_000, "how many keys to create")
 	flag.IntVar(&db, "db", 0, "select database")
-	flag.IntVar(&pipelineBatchSize, "pipelineBatchSize", 1000, "pipeline batch size")
+	flag.IntVar(&pipelineBatchSize, "pipelineBatchSize", 10_000, "pipeline batch size")
 	flag.StringVar(&addr, "addr", "localhost:6379", "redis host:port")
 	flag.StringVar(&password, "password", "", "redis password")
+	flag.StringVar(&keyPrefix, "keyPrefix", "test_", "key prefix")
 	flag.BoolVar(&useTLS, "tls", false, "enable TLS")
 	flag.BoolVar(&tlsInsecureSkipVerify, "tlsInsecureSkipVerify", false, "skip tls secure verify")
 	flag.BoolVar(&pipeline, "pipeline", true, "redis pipelining")
@@ -80,7 +81,7 @@ func main() {
 				}
 				set(func() error {
 					setCount++
-					str := strconv.Itoa(setCount)
+					str := genKey(keyPrefix, setCount)
 					_, err := pipe.Set(ctx, str, setCount, 0).Result()
 					return err
 				})
@@ -102,7 +103,7 @@ func main() {
 		for range count {
 			set(func() error {
 				setCount++
-				str := strconv.Itoa(setCount)
+				str := genKey(keyPrefix, setCount)
 				_, err := redisClient.Set(ctx, str, setCount, 0).Result()
 				return err
 			})
@@ -113,6 +114,10 @@ func main() {
 
 	slog.Info(fmt.Sprintf("%s batches=%d keys=%d errors=%d elapsed=%v",
 		pipelineLabel, pipelineBatches, setCount, setErrors, elapsed))
+}
+
+func genKey(prefix string, i int) string {
+	return fmt.Sprintf("%s%d", prefix, i)
 }
 
 func fatalf(format string, a ...any) {

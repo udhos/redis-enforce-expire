@@ -67,7 +67,7 @@ func loadRules(path string, sec *secret.Secret) ([]rule, error) {
 }
 
 const (
-	defaultScanCount = 1000
+	defaultScanCount = 10_000
 	defaultRedisDB   = "0-15"
 )
 

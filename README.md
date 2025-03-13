@@ -24,14 +24,14 @@ Example rule:
   tls: false
   tls_insecure_skip_verify: false
   scan_match: "*"
-  scan_count: 1000
+  scan_count: 10000
   scan_type: "" # emtpy means all
   multiple_goroutines: true
   default_ttl: 1m
   max_ttl: 5m
   crash_on_scan_error: false
   add_random_ttl: 10s # randomize expiration to avoid expiring many keys at the same time
-  pipeline_batch_size: 1000 # pipeline is disabled if batch is less than 1
+  pipeline_batch_size: 10000 # pipeline is disabled if batch is less than 1
 ```
 
 Rule fields descriptions:
