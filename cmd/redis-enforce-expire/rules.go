@@ -58,12 +58,20 @@ func (r *rule) parseRedisDB() (int, int, error) {
 	return first, last, nil
 }
 
-func loadRules(path string, sec *secret.Secret) ([]rule, error) {
+func loadRules(path string, sec *secret.Secret, logRules bool) ([]rule, error) {
 	data, errRead := os.ReadFile(path)
 	if errRead != nil {
 		return nil, errRead
 	}
-	return newRules(data, sec)
+	rules, errRules := newRules(data, sec)
+
+	if logRules {
+		data, _ := yaml.Marshal(rules)
+		str := string(data)
+		infof("rules:\n\n%s\n", str)
+	}
+
+	return rules, errRules
 }
 
 const (

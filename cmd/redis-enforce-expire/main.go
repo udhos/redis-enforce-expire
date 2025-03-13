@@ -45,8 +45,9 @@ func main() {
 	sec := initSecret(me)
 
 	rulesFile := envString("RULES", "rules.yaml")
+	logRules := envBool("LOG_RULES", true)
 
-	rules, errRules := loadRules(rulesFile, sec)
+	rules, errRules := loadRules(rulesFile, sec, logRules)
 	if errRules != nil {
 		fatalf("error reading rules file=%s: %v", rulesFile, errRules)
 	}
