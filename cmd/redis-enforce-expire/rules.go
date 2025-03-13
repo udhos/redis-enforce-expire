@@ -58,12 +58,12 @@ func (r *rule) parseRedisDB() (int, int, error) {
 	return first, last, nil
 }
 
-func loadRules(path string, sec *secret.Secret, logRules bool) ([]rule, error) {
+func loadRules(path string, sec *secret.Secret, logRules, debugSecret bool) ([]rule, error) {
 	data, errRead := os.ReadFile(path)
 	if errRead != nil {
 		return nil, errRead
 	}
-	rules, errRules := newRules(data, sec)
+	rules, errRules := newRules(data, sec, debugSecret)
 
 	if logRules {
 		data, _ := yaml.Marshal(rules)
@@ -79,7 +79,7 @@ const (
 	defaultRedisDB   = "0-15"
 )
 
-func newRules(data []byte, sec *secret.Secret) ([]rule, error) {
+func newRules(data []byte, sec *secret.Secret, debugSecret bool) ([]rule, error) {
 	const me = "newRules"
 	var rules []rule
 
@@ -104,6 +104,10 @@ func newRules(data []byte, sec *secret.Secret) ([]rule, error) {
 			infof("%s: %s: scan_count=%d, forcing to default=%d",
 				me, r.label(i, len(rules)), r.ScanCount, defaultScanCount)
 			r.ScanCount = defaultScanCount
+		}
+		if debugSecret {
+			infof("%s: %s: raw redis_password: '%s'",
+				me, r.label(i, len(rules)), r.RedisPassword)
 		}
 		r.RedisPassword = sec.Retrieve(r.RedisPassword)
 		rules[i] = r

@@ -42,12 +42,14 @@ func main() {
 		slog.Info(v)
 	}
 
-	sec := initSecret(me)
+	secretDebug := envBool("SECRET_DEBUG", false)
+
+	sec := initSecret(me, secretDebug)
 
 	rulesFile := envString("RULES", "rules.yaml")
 	logRules := envBool("LOG_RULES", true)
 
-	rules, errRules := loadRules(rulesFile, sec, logRules)
+	rules, errRules := loadRules(rulesFile, sec, logRules, secretDebug)
 	if errRules != nil {
 		fatalf("error reading rules file=%s: %v", rulesFile, errRules)
 	}
@@ -61,9 +63,8 @@ func main() {
 	run(app)
 }
 
-func initSecret(me string) *secret.Secret {
+func initSecret(me string, secretDebug bool) *secret.Secret {
 	roleArn := envString("ROLE_ARN", "")
-	secretDebug := envBool("SECRET_DEBUG", false)
 
 	awsConfOptions := awsconfig.Options{
 		RoleArn:         roleArn,
