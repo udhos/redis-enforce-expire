@@ -2,6 +2,18 @@ apiVersion: v1
 entries:
   redis-enforce-expire:
   - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2025-05-04T22:50:29.872768138-03:00"
+    description: Helm chart to install redis-enforce-expire into k8s
+    digest: 293fbbc2fa2a0bb4090fa64920a87411c68bceea4f9146c9b28608f223cecc53
+    name: redis-enforce-expire
+    sources:
+    - https://github.com/udhos/redis-enforce-expire
+    type: application
+    urls:
+    - https://udhos.github.io/redis-enforce-expire/redis-enforce-expire-0.1.0.tgz
+    version: 0.1.0
+  - apiVersion: v2
     appVersion: 0.0.10
     created: "2025-03-13T13:20:20.097997662-03:00"
     description: Helm chart to install redis-enforce-expire into k8s
@@ -121,4 +133,4 @@ entries:
     urls:
     - https://udhos.github.io/redis-enforce-expire/redis-enforce-expire-0.0.1.tgz
     version: 0.0.1
-generated: "2025-03-13T13:20:20.097577939-03:00"
+generated: "2025-05-04T22:50:29.872331304-03:00"
