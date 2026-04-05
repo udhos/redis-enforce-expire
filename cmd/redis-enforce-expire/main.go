@@ -105,11 +105,9 @@ func run(app *application) {
 		for db := first; db <= last; db++ {
 			dbName := fmt.Sprintf("%sdb:%d", ruleName, db)
 			if r.MultipleGoroutines {
-				wg.Add(1)
-				go func() {
+				wg.Go(func() {
 					setExpire(r, dbName, db, true)
-					wg.Done()
-				}()
+				})
 			} else {
 				setExpire(r, dbName, db, false)
 			}

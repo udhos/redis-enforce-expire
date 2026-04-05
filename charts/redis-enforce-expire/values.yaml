@@ -78,7 +78,7 @@ configMapRules:
     tls_insecure_skip_verify: false
     scan_match: "*"
     scan_count: 10000
-    scan_type: "" # emtpy means all
+    scan_type: "" # empty means all
     multiple_goroutines: true
     default_ttl: 24h
     max_ttl: 168h # 7d

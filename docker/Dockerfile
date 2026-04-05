@@ -1,7 +1,7 @@
 # STEP 1 build executable binary
 
 #FROM golang:alpine as builder
-FROM golang:1.24.2-alpine3.21 AS builder
+FROM golang:1.26.1-alpine3.23 AS builder
 
 RUN apk update
 RUN apk add git
@@ -22,7 +22,7 @@ RUN go build -o /tmp/redis-enforce-expire github.com/udhos/redis-enforce-expire/
 #
 # curl: https://security.alpinelinux.org/srcpkg/curl
 #
-FROM alpine:3.21.3
+FROM alpine:3.23.3
 COPY --from=builder /tmp/redis-enforce-expire /bin/redis-enforce-expire
 #RUN apk add curl=8.1.2-r0 libcrypto3=3.1.0-r4 libssl3=3.1.0-r4
 RUN apk update && \
